@@ -110,3 +110,56 @@ def Q_learning(T, mdp, gamma, alpha, version, epsilon=0.0,
         Q_vals2[state[1], a_t] = Q_vals2[state[1], a_t] + alpha*delta
     state = s_t1
   return cumulative_regret_arr
+
+def shiQ_learning(T, mdp, alpha, version, epsilon=0.0, eval_period=1000,
+               eval_steps=1000, lambda_star=0):
+  """
+    Standard Q learning
+
+    version:
+      0: Greedy Q Learning
+      1: Epsilon Greedy Q Learning
+      2: Optimistic Q Learning
+  """
+  ### Optimistic Q Learning
+  if version == 2:
+    optimal_return = (mdp.delta + mdp.epsilon)/(2.0*mdp.delta + mdp.epsilon)
+    Q_vals1 = np.ones((mdp.ary_len, mdp.A))*optimal_return
+    Q_vals2 = np.ones((mdp.ary_len, mdp.A))*optimal_return
+  else:
+    Q_vals1 = np.zeros((mdp.ary_len, mdp.A))
+    Q_vals2 = np.zeros((mdp.ary_len, mdp.A))
+
+  start = np.array([0,0])
+  state = start
+
+  cumulative_regret_arr = []
+
+  for t in range(T):
+    gamma = 1.0 - 1.0/((float(t))**(1/3))
+    if t % eval_period == 0:
+      cumulative_regret_arr.append(
+          evaluate_policy(mdp, eval_steps, Q_vals1, Q_vals2, lambda_star=lambda_star))
+
+    a_t = policy(mdp, state, Q_vals1, Q_vals2, epsilon, version)
+    s_t1 = mdp.transition(state, a_t)
+    curr_reward = mdp.reward(state, s_t1)
+
+    s_t1 = s_t1.astype(int)
+
+    if s_t1[0] == 0:
+      if state[0] == 0:
+        delta = curr_reward + gamma*np.max(Q_vals1[s_t1[1]]) - Q_vals1[state[1], a_t]
+        Q_vals1[state[1], a_t] = Q_vals1[state[1], a_t] + alpha*delta
+      else:
+        delta = curr_reward + gamma*np.max(Q_vals1[s_t1[1]]) - Q_vals2[state[1], a_t]
+        Q_vals2[state[1], a_t] = Q_vals2[state[1], a_t] + alpha*delta
+    else:
+      if state[0] == 0:
+        delta = curr_reward + gamma*np.max(Q_vals2[s_t1[1]]) - Q_vals1[state[1], a_t]
+        Q_vals1[state[1], a_t] = Q_vals1[state[1], a_t] + alpha*delta
+      else:
+        delta = curr_reward + gamma*np.max(Q_vals2[s_t1[1]]) - Q_vals2[state[1], a_t]
+        Q_vals2[state[1], a_t] = Q_vals2[state[1], a_t] + alpha*delta
+    state = s_t1
+  return cumulative_regret_arr

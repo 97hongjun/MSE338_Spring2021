@@ -12,7 +12,7 @@ from plot import *
 
 if __name__ == "__main__":
     """
-        0: 0 for discounted, 1 for differential q learning.
+        0: 0 for discounted, 1 for differential q learning, 2 for shi q learning.
         1: epsilon_greedy parameter.
         2: eval period.
         3: T.
@@ -30,14 +30,18 @@ if __name__ == "__main__":
     if algorithm_version == 0:
         gamma = float(args[6])
 
-    depth = 2
-    A = 5
-    mdp_epsilon = .2
+    depth = 1
+    A = 11
     A_prime = np.floor((A-1) / 2)
     branch_factor = A - A_prime - 1
-    D = 12
+    D = 21
     parameters = (D, A, mdp_epsilon)
     eta = 1.0
+    S = 0
+    for i in range(depth+1):
+        S += branch_factor**i
+    T_epsilon = D*A*S
+    mdp_epsilon = 0.2*np.sqrt((A-1)/(A*(D**2)))
     np.random.seed(seed)
 
     env_regret_arrs = []
@@ -63,7 +67,7 @@ if __name__ == "__main__":
             pickle.dump(env_regret_arrs, handle)
         avg_regrets = np.sum(np.sum(env_regret_arrs, axis=0), axis=0)/100.0
         plot_regret(avg_regrets, eval_period, filename, algorithm_version)
-    else:
+    elif algorithm_version == 0:
         for t in range(10):
             s_time = time.time()
             mdp = MDP(depth=depth, parameters=parameters)
@@ -84,3 +88,5 @@ if __name__ == "__main__":
             pickle.dump(env_regret_arrs, handle)
         avg_regrets = np.sum(np.sum(env_regret_arrs, axis=0), axis=0)/100.0
         plot_regret(avg_regrets, eval_period, filename, algorithm_version)
+    else:
+        print("")
