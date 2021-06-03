@@ -4,11 +4,40 @@ import matplotlib.pyplot as plt
 import pickle
 import sys
 import time
+import multiprocessing as mp
+import copy
 from mdp import *
 from algorithms import *
 from qlearning import *
 from plot import *
 
+
+def diff_q_learning_job(inputs):
+    T = inputs[0]
+    mdp = inputs[1]
+    alpha = inputs[2]
+    eta = inputs[3]
+    epsilon_greedy=inputs[4]
+    eval_period = inputs[5]
+    lambda_star = inputs[6]
+    seed = inputs[7]
+    np.random.seed(seed)
+    return differentialQ_learning(T, mdp, alpha, eta, version=1, epsilon=epsilon_greedy,
+                                        eval_period=eval_period, eval_steps=1000,
+                                        lambda_star=lambda_star)
+
+def discount_q_learning_job(inputs):
+    T = inputs[0]
+    mdp = inputs[1]
+    gamma = inputs[2]
+    alpha = inputs[3]
+    epsilon_greedy=inputs[4]
+    eval_period = inputs[5]
+    lambda_star = inputs[6]
+    seed = inputs[7]
+    np.random.seed(seed)
+    return Q_learning(T, mdp, gamma, alpha, version=1, epsilon=epsilon_greedy,
+                            eval_period=eval_period, eval_steps=1000, lambda_star=lambda_star)
 
 if __name__ == "__main__":
     """
@@ -35,13 +64,14 @@ if __name__ == "__main__":
     A_prime = np.floor((A-1) / 2)
     branch_factor = A - A_prime - 1
     D = 21
-    parameters = (D, A, mdp_epsilon)
     eta = 1.0
     S = 0
     for i in range(depth+1):
         S += branch_factor**i
     T_epsilon = D*A*S
-    mdp_epsilon = 0.2*np.sqrt((A-1)/(A*(D**2)))
+    # mdp_epsilon = 0.2*np.sqrt((A-1)/(A*(D**2)))
+    mdp_epsilon = 0.18
+    parameters = (D, A, mdp_epsilon)
     np.random.seed(seed)
 
     env_regret_arrs = []
@@ -51,12 +81,20 @@ if __name__ == "__main__":
             mdp = MDP(depth=depth, parameters=parameters)
             lambda_star = mdp.compute_lambda_star()
             np.random.seed(seed*2)
-            regret_arrs  = []
+
+            inputs = [T, mdp, alpha, eta, epsilon_greedy, eval_period, lambda_star]
+            all_inputs = []
             for i in range(10):
-                regret_arr = differentialQ_learning(T, mdp, alpha, eta, version=1, epsilon=epsilon_greedy,
-                                                    eval_period=eval_period, eval_steps=1000,
-                                                    lambda_star=lambda_star)
-                regret_arrs.append(regret_arr)
+                input_term = copy.deepcopy(inputs)
+                input_term.append(seed*(2+i))
+                all_inputs.append(input_term)
+            with mp.Pool(processes=10) as pool:
+                regret_arrs = pool.map(diff_q_learning_job, all_inputs)
+            # for i in range(10):
+            #     regret_arr = differentialQ_learning(T, mdp, alpha, eta, version=1, epsilon=epsilon_greedy,
+            #                                         eval_period=eval_period, eval_steps=1000,
+            #                                         lambda_star=lambda_star)
+            #     regret_arrs.append(regret_arr)
             env_regret_arrs.append(regret_arrs)
             e_time = time.time()
             print("Finished Iteration: %s, Time Taken: %s"%(t, e_time-s_time))
@@ -73,11 +111,16 @@ if __name__ == "__main__":
             mdp = MDP(depth=depth, parameters=parameters)
             lambda_star = mdp.compute_lambda_star()
             np.random.seed(seed*2)
-            regret_arrs  = []
+
+            inputs = [T, mdp, gamma, alpha, epsilon_greedy, eval_period, lambda_star]
+            all_inputs = []
             for i in range(10):
-                regret_arr = Q_learning(T, mdp, gamma, alpha, version=1, epsilon=epsilon_greedy,
-                                        eval_period=eval_period, eval_steps=1000, lambda_star=lambda_star)
-                regret_arrs.append(regret_arr)
+                input_term = copy.deepcopy(inputs)
+                input_term.append(seed*(2+i))
+                all_inputs.append(input_term)
+            with mp.Pool(processes=10) as pool:
+                regret_arrs = pool.map(discount_q_learning_job, all_inputs)
+
             env_regret_arrs.append(regret_arrs)
             e_time = time.time()
             print("Finished Iteration: %s, Time Taken: %s"%(t, e_time-s_time))
