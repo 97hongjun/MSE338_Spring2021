@@ -7,6 +7,7 @@ import time
 from mdp import *
 from algorithms import *
 from qlearning import *
+from plot import *
 
 
 if __name__ == "__main__":
@@ -52,16 +53,16 @@ if __name__ == "__main__":
                                                     eval_period=eval_period, eval_steps=1000,
                                                     lambda_star=lambda_star)
                 regret_arrs.append(regret_arr)
-            env_regret_arrs.append(regret_arr)
+            env_regret_arrs.append(regret_arrs)
             e_time = time.time()
             print("Finished Iteration: %s, Time Taken: %s"%(t, e_time-s_time))
         env_regret_arrs = np.array(env_regret_arrs)
-        filename = "pickle_data/diff_q_learning_regrets_epsilon%s_evalperiod%s_T%s_alpha%s_seed%s"%(epsilon_greedy, eval_period, T, alpha, seed)
-        pklname = "%s.pkl"
+        filename = "diff_q_learning_regrets_epsilon%s_evalperiod%s_T%s_alpha%s_seed%s"%(epsilon_greedy, eval_period, T, alpha, seed)
+        pklname = "pickle_data/%s.pkl"%filename
         with open(pklname, 'wb') as handle:
             pickle.dump(env_regret_arrs, handle)
         avg_regrets = np.sum(np.sum(env_regret_arrs, axis=0), axis=0)/100.0
-        plot_regret(avg_regrets, eval_period, filename)
+        plot_regret(avg_regrets, eval_period, filename, algorithm_version)
     else:
         for t in range(10):
             s_time = time.time()
@@ -73,13 +74,13 @@ if __name__ == "__main__":
                 regret_arr = Q_learning(T, mdp, gamma, alpha, version=1, epsilon=epsilon_greedy,
                                         eval_period=eval_period, eval_steps=1000, lambda_star=lambda_star)
                 regret_arrs.append(regret_arr)
-            env_regret_arrs.append(regret_arr)
+            env_regret_arrs.append(regret_arrs)
             e_time = time.time()
             print("Finished Iteration: %s, Time Taken: %s"%(t, e_time-s_time))
         env_regret_arrs = np.array(env_regret_arrs)
-        filename = "pickle_data/q_learning_regrets_epsilon%s_evalperiod%s_T%s_alpha%s_seed%s_gamma%s"%(epsilon_greedy, eval_period, T, alpha, seed, gamma)
-        pklname = "%s.pkl"
+        filename = "q_learning_regrets_epsilon%s_evalperiod%s_T%s_alpha%s_seed%s_gamma%s"%(epsilon_greedy, eval_period, T, alpha, seed, gamma)
+        pklname = "pickle_data/%s.pkl"%filename
         with open(pklname, 'wb') as handle:
             pickle.dump(env_regret_arrs, handle)
         avg_regrets = np.sum(np.sum(env_regret_arrs, axis=0), axis=0)/100.0
-        plot_regret(avg_regrets, eval_period, filename)
+        plot_regret(avg_regrets, eval_period, filename, algorithm_version)

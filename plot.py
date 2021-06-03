@@ -9,6 +9,6 @@ def plot_regret(regret_values, eval_period, filename, algorithm_version):
   if algorithm_version == 0:
       plt.title('Discounted Q Learning')
   else:
-      plt.tilte('Differential Q Learning')
+      plt.title('Differential Q Learning')
   plt.legend()
   plt.savefig("plots/%s.png"%filename, dpi=150)
